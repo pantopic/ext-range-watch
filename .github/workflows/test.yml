@@ -25,8 +25,8 @@ jobs:
       with:
         version: 0.16.0
 
-    - name: Build WASM Gi
-      run: cd test && tinygo build -buildmode=wasi-legacy -target=wasi -opt=2 -gc=conservative -scheduler=none -o ../host/test.wasm module.go
+    - name: Build WASM Go
+      run: make wasm-go
 
     - name: Build WASM Zig
       run: make wasm-zig
