@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"io"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
@@ -16,9 +18,26 @@ import (
 )
 
 //go:embed test\.wasm
-var testwasm []byte
+var testwasmGo []byte
+
+//go:embed test-zig\.wasm
+var testwasmZig []byte
 
 func TestModule(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		wasm []byte
+	}{
+		{`go`, testwasmGo},
+		{`zig`, testwasmZig},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			testModule(t, tc.wasm)
+		})
+	}
+}
+
+func testModule(t *testing.T, testwasm []byte) {
 	var (
 		ctx = context.Background()
 		out = &bytes.Buffer{}
@@ -51,76 +70,91 @@ func TestModule(t *testing.T) {
 		panic(err)
 	}
 	ctx = wazeropool.ContextSet(ctx, pool)
-
 	ctx = hostModule.ContextCopy(ctx, ctx)
-
+	ctx = hostModule.ContextCopy(ctx, ctx)
 	call := func(cmd string, params ...uint64) {
 		if _, err := mod.ExportedFunction(cmd).Call(ctx, params...); err != nil {
 			t.Fatalf("%v\n%s", err, out.String())
 		}
 	}
-	read := func() (val int, id string) {
+	read := func() (val int, ids []string) {
 		line, err := out.ReadString('\n')
-		if line == "" {
-			return -1, ""
+		if err == io.EOF {
+			return
 		}
-		parts := strings.Split(line[:len(line)-1], ",")
-		if val, err = strconv.Atoi(parts[0]); err != nil {
+		if err != nil {
 			panic(err)
 		}
-		id = parts[1]
+		parts := strings.Split(line[:len(line)-1], " ")
+		if len(parts) < 2 {
+			t.Fatalf("Invalid output line: %s", line)
+		}
+		val, err = strconv.Atoi(parts[0])
+		if err != nil {
+			panic(err)
+		}
+		for _, s := range parts[1:] {
+			if s == "{" || s == "}" {
+				continue
+			}
+			s = strings.Trim(s, ",")
+			ids = append(ids, s)
+		}
 		return
 	}
-	expect := func(val int, ids ...string) {
-		var m = make(map[string]bool)
-		for _, id := range ids {
-			m[id] = true
-		}
+	type result struct {
+		val int
+		ids []string
+	}
+	expect := func(results []result) {
 		// time sleep required because we're relying on stdout which may return EOF rather than blocking
-		// replace stdout with pipe to solve race condition, removing time sleep dependency
-		time.Sleep(10 * time.Millisecond)
-		for {
-			if len(m) == 0 {
-				break
-			}
-			v, id := read()
-			if v != val {
-				t.Errorf("Value %d does not match %d for %s", v, val, id)
-				break
-			}
-			if len(id) > 0 {
-				_, ok := m[id]
-				if !ok {
-					t.Errorf("ID %s incorrect for %d", id, val)
+		for _, r := range results {
+			var vm = map[string]bool{}
+			// replace stdout with pipe to solve race condition, removing time sleep dependency
+			time.Sleep(20 * time.Millisecond)
+			for len(vm) < len(r.ids) {
+				val, found := read()
+				if val == 0 {
 					break
 				}
-				delete(m, id)
-			} else {
-				break
+				if val != r.val {
+					t.Errorf("Expected value %d, got %d", r.val, val)
+				}
+				for _, id := range found {
+					vm[id] = true
+				}
+			}
+			for _, id := range r.ids {
+				if _, ok := vm[id]; !ok {
+					t.Errorf("ID %s missing\n%s", id, string(debug.Stack()))
+				}
 			}
 		}
 	}
+	t.Run("group_start", func(t *testing.T) {
+		call("test_group_start")
+	})
 	t.Run("create", func(t *testing.T) {
 		call("test_create", 100, 200)
 	})
 	t.Run("emit", func(t *testing.T) {
 		call("test_emit", 1)
-		expect(1, "100-200")
+		expect([]result{{1, []string{"100-200"}}})
 		call("test_create", 200, 300)
 		call("test_emit", 2)
-		expect(2, "100-200", "200-300")
+		expect([]result{{2, []string{"100-200", "200-300"}}})
 		call("test_create", 500, 600)
 		call("test_emit", 3)
-		expect(3, "100-200", "200-300")
+		expect([]result{{3, []string{"100-200", "200-300"}}})
 		call("test_create", 250, 400)
 		call("test_emit", 4)
-		expect(4, "100-200", "200-300", "250-400")
+		expect([]result{{4, []string{"100-200", "200-300", "250-400"}}})
 	})
 	ctx = hostModule.ContextCopy(ctx, ctx)
 	t.Run("delete", func(t *testing.T) {
 		call("test_stop", 100, 200)
 		call("test_emit", 5)
-		expect(5, "200-300", "250-400")
+		expect([]result{{5, []string{"200-300", "250-400"}}})
 	})
 	t.Run("reserve", func(t *testing.T) {
 		call("test_reserve", 1000, 2000)
@@ -133,10 +167,18 @@ func TestModule(t *testing.T) {
 		call("test_emit_2", 1700)
 		call("test_start", 1000, 2000)
 		call("test_emit_2", 1800)
-		expect(1500, "1000-2000")
-		expect(-1, "1000-2000")
+		expect([]result{
+			{1500, []string{"1000-2000"}},
+			{1600, []string{"1000-2000"}},
+			{1700, []string{"1000-2000"}},
+			{1800, []string{"1000-2000"}},
+		})
+		expect([]result{{0, nil}})
 		call("test_emit_2", 1900)
-		expect(1900, "1000-2000")
+		expect([]result{{1900, []string{"1000-2000"}}})
+	})
+	t.Run("group_stop", func(t *testing.T) {
+		call("test_group_stop")
 	})
 	hostModule.Stop()
 }
