@@ -16,7 +16,7 @@ import (
 )
 
 // Name is the name of this host module.
-const Name = "pantopic/wazero-range-watch"
+const Name = "pantopic/ext-range-watch"
 
 var (
 	ctxKeyMeta      = Name + `/meta`

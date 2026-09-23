@@ -87,39 +87,39 @@ func appendKey(k []byte) bool {
 	return true
 }
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_reserve
 func _reserve()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_open
 func _open()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_start
 func _start()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_stop
 func _stop()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_queue
 func _queue()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_flush
 func _flush()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_clear
 func _clear()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_group_start
 func _group_start()
 
-//go:wasm-module pantopic/wazero-range-watch
+//go:wasm-module pantopic/ext-range-watch
 //export __range_watch_group_stop
 func _group_stop()
 

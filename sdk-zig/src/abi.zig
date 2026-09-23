@@ -1,7 +1,3 @@
-//! Zig SDK for the pantopic/wazero-range-watch host module.
-//! Mirrors the ABI of sdk-go: the guest exports `__range_watch` (meta page)
-//! and `__range_watch_recv`, and imports the host functions below.
-
 const std = @import("std");
 const sdk = @import("sdk.zig");
 
@@ -59,15 +55,15 @@ export fn __range_watch_recv() void {
     if (_recv) |f| f(notices);
 }
 
-pub extern "pantopic/wazero-range-watch" fn __range_watch_queue() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_flush() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_reset() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_reserve() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_open() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_start() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_stop() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_group_start() void;
-pub extern "pantopic/wazero-range-watch" fn __range_watch_group_stop() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_queue() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_flush() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_reset() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_reserve() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_open() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_start() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_stop() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_group_start() void;
+pub extern "pantopic/ext-range-watch" fn __range_watch_group_stop() void;
 
 pub fn setData(b: []const u8) void {
     _buf_len = @intCast(b.len);

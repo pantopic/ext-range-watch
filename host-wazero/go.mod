@@ -1,4 +1,4 @@
-module github.com/pantopic/wazero-range-watch/host
+module github.com/pantopic/ext-range-watch/host-wazero
 
 go 1.25.6
 
