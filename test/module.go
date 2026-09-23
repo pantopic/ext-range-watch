@@ -3,7 +3,7 @@ package main
 import (
 	"strconv"
 
-	"github.com/pantopic/wazero-range-watch/sdk-go"
+	"github.com/pantopic/ext-range-watch/sdk-go"
 )
 
 func init() {
