@@ -17,10 +17,10 @@ import (
 	"github.com/pantopic/wazero-pool"
 )
 
-//go:embed test\.wasm
+//go:embed test.go.wasm
 var testwasmGo []byte
 
-//go:embed test-zig\.wasm
+//go:embed test.zig.wasm
 var testwasmZig []byte
 
 func TestModule(t *testing.T) {
