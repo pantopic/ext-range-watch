@@ -251,7 +251,11 @@ func (h *hostModule) Register(ctx context.Context, r wazero.Runtime) (err error)
 
 // InitContext retrieves the meta page from the wasm module
 func (h *hostModule) InitContext(ctx context.Context, m api.Module) (context.Context, error) {
-	stack, err := m.ExportedFunction(`__range_watch`).Call(ctx)
+	fn := m.ExportedFunction(`__range_watch`)
+	if fn == nil {
+		return ctx, nil
+	}
+	stack, err := fn.Call(ctx)
 	if err != nil {
 		return ctx, err
 	}
