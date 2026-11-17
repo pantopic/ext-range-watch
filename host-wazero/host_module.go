@@ -38,8 +38,7 @@ type hostModule struct {
 	sync.RWMutex
 	sync.WaitGroup
 
-	module api.Module
-	limit  int
+	limit int
 }
 
 type Option func(*hostModule)
@@ -245,7 +244,7 @@ func (h *hostModule) Register(ctx context.Context, r wazero.Runtime) (err error)
 			log.Panicf("Method signature implementation missing: %#v", fn)
 		}
 	}
-	h.module, err = builder.Instantiate(ctx)
+	_, err = builder.Instantiate(ctx)
 	return
 }
 
